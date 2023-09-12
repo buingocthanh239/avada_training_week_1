@@ -1,19 +1,22 @@
 const BASE_URL = 'https://jsonplaceholder.typicode.com'
 
 // 1 
-const fetchApi =  async (api) => {
+const fetchApi =  async (url) => {
     try {
-        const response = await fetch(api)
+        const response = await fetch(BASE_URL + url)
         return response.json();
     } catch (err) {
         console.log(err)
     }
 }   
 
+const  helll = () => {
+    console.log('hello world')
+}
 // 2
 const fetchUsers = async () => {
     try {
-        const users = await fetchApi(BASE_URL + '/users');
+        const users = await fetchApi('/users');
         return users
     } catch (err) {
         console.log(err)
@@ -23,7 +26,7 @@ const fetchUsers = async () => {
 // 3 
 const fetchPosts = async () => {
     try {
-        const posts = await fetchApi(BASE_URL + '/posts');
+        const posts = await fetchApi( '/posts');
         return posts
     } catch (err) {
         console.log(err)
@@ -32,7 +35,7 @@ const fetchPosts = async () => {
 
 const fetchComments = async () => {
     try {
-        const comments = await fetchApi(BASE_URL + '/comments');
+        const comments = await fetchApi('/comments');
         return comments
     } catch (err) {
         console.log(err)
@@ -40,7 +43,7 @@ const fetchComments = async () => {
 }
 
 const fetchAllApi = async () => {
-    const [users, posts, comments] = await Promise.all([fetchUsers(), fetchPosts(), fetchComments()]);
+    const [users, posts, comments] = await Promise.all([fetchApi('/users'), fetchPosts(), fetchComments()]);
     return [users, posts, comments];
 }
 
@@ -105,15 +108,15 @@ const sortUser = async () => {
     return cloneUser.sort((currUser, nextUser) => nextUser.postCounts - currUser.postCounts) 
 }
 // 8
-const mergePost = async () => {
-    const post = await fetchApi(BASE_URL + '/posts/1');
-    const comments = await fetchApi(`${BASE_URL}/comments?postId=${post.id}`)
+const mergePost = async (id) => {
+    const post = await fetchApi('/posts/'+ id);
+    const comments = await fetchApi(`/comments?postId=${post.id}`)
     return {
         ...post,
-        comments: comments
+        comments
     }
 }
 
-reformatUser() 
+sortUser() 
     .then(users => console.log(users))
 
