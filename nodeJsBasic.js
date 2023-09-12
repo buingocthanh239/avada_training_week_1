@@ -13,7 +13,7 @@ const fetchApi =  async (api) => {
 // 2
 const fetchUsers = async () => {
     try {
-        users = await fetchApi(BASE_URL + '/users');
+        const users = await fetchApi(BASE_URL + '/users');
         return users
     } catch (err) {
         console.log(err)
@@ -23,7 +23,7 @@ const fetchUsers = async () => {
 // 3 
 const fetchPosts = async () => {
     try {
-        posts = await fetchApi(BASE_URL + '/posts');
+        const posts = await fetchApi(BASE_URL + '/posts');
         return posts
     } catch (err) {
         console.log(err)
@@ -32,22 +32,27 @@ const fetchPosts = async () => {
 
 const fetchComments = async () => {
     try {
-        comments = await fetchApi(BASE_URL + '/comments');
+        const comments = await fetchApi(BASE_URL + '/comments');
         return comments
     } catch (err) {
         console.log(err)
     }
 }
 
+const fetchAllApi = async () => {
+    const [users, posts, comments] = await Promise.all([fetchUsers(), fetchPosts(), fetchComments()]);
+    return [users, posts, comments];
+}
+
 const formatUsers = async () => {
     try {
-        const [users, posts, comments] = await Promise.all([fetchUsers(), fetchPosts(), fetchComments()]);
-        const newUser = users.map( user => {
-            user.posts = posts.filter(post => post.userId === user.id);
-            user.comments = comments.filter(comment => comment.email === user.email);
-            return user;
-        })
-        return newUser; 
+        const [users, posts, comments] = await fetchAllApi();
+        return  users.map( user => ({
+                ...user,
+                posts: posts.filter(post => post.userId === user.id),
+                comments: comments.filter(comment => comment.email === user.email)
+            })
+        )
     } catch (err) { 
         console.log(err)
     }
@@ -67,19 +72,16 @@ const filterUserHasMoreThreeComments = async () => {
 // 5
 const reformatUser = async () => {
     try {
-        const [users, posts, comments] = await Promise.all([fetchUsers(), fetchPosts(), fetchComments()]);
-        const newUser = users.map( user => {
-            user.postCounts = posts.reduce((total, currPost) => {
-                if (currPost.userId === user.id) return ++total;
-                return total;
-            }, 0);
-            user.commentCounts = comments.reduce((total, comment) => {
-                if (comment.email === user.email) return ++total;
-                return total;
-            }, 0);
-            return user;
+        const users = await formatUsers();
+        return users.map( user => {
+            const { posts, comments, ...originalUser} = user;
+            return {
+                ...originalUser,
+                postCounts: posts.length,
+                commentCounts: comments.length
+            }
         })
-        return newUser; 
+        
     } catch (err) { 
         console.log(err)
     }
@@ -88,29 +90,30 @@ const reformatUser = async () => {
 // 6
 const findUserWithTheMostComments = async () => {
     const users = await reformatUser();
-    const findUser = users.reduce((maxUser, currUser) => maxUser.commentCounts < currUser.commentCounts ? currUser : maxUser);
-    return findUser;
+    return users.reduce((maxUser, currUser) => maxUser.commentCounts < currUser.commentCounts ? currUser : maxUser);
 }
 
 const findUserWithTheMostPosts = async () => {
     const users = await reformatUser();
-    const findUser = users.reduce((maxUser, currUser) => maxUser.postCounts < currUser.postCounts ? currUser : maxUser);
-    return findUser;
+    return users.reduce((maxUser, currUser) => maxUser.postCounts < currUser.postCounts ? currUser : maxUser);
 }
 
 // 7
 const sortUser = async () => {
     const user = await reformatUser();
-    return user.sort((currUser, nextUser) => nextUser.postCounts - currUser.postCounts) 
+    const cloneUser = user;
+    return cloneUser.sort((currUser, nextUser) => nextUser.postCounts - currUser.postCounts) 
 }
 // 8
 const mergePost = async () => {
     const post = await fetchApi(BASE_URL + '/posts/1');
     const comments = await fetchApi(`${BASE_URL}/comments?postId=${post.id}`)
-    post.comments = comments;
-    return post
+    return {
+        ...post,
+        comments: comments
+    }
 }
 
-mergePost() 
+reformatUser() 
     .then(users => console.log(users))
 
